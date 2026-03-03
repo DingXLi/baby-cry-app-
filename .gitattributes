@@ -1,0 +1,15 @@
+# Audio files
+*.wav binary
+*.mp3 binary
+*.flac binary
+
+# ML models
+*.h5 binary
+*.pth binary
+*.tflite binary
+*.onnx binary
+
+# Images
+*.png binary
+*.jpg binary
+*.jpeg binary
