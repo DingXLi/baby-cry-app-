@@ -1,172 +1,187 @@
-# 📊 数据集调研
+# 📊 数据集调研与下载指南
 
-## 目标
-
-寻找适合婴儿哭声分类的公开数据集，用于训练 ML 模型。
-
-**分类目标：**
-- 饥饿 (Hungry)
-- 困倦 (Sleepy/Tired)
-- 不适/疼痛 (Uncomfortable/Pain)
-- 正常哭声 (Normal)
+**最后更新:** 2026-02-27
 
 ---
 
-## 候选数据集
+## 🎯 已选定的数据集
 
-### 1. Baby Cry Classification (Kaggle)
+### 1. Baby Crying Sounds Dataset (Menna Ahmed)
 
-**链接：** https://www.kaggle.com/datasets?query=baby+cry+classification
+**链接:** https://www.kaggle.com/datasets/mennaahmed23/baby-crying-sounds-dataset
 
-**特点：**
-- 专门针对哭声分类
-- 可能有预标注的类别
+**特点:**
+- 专门针对婴儿哭声分类
+- 包含多种哭声类型
 - 格式：WAV/MP3
 
-**待确认：**
+**待确认:**
+- [ ] 具体分类标签
 - [ ] 数据量大小
-- [ ] 分类标签是否符合需求
-- [ ] 许可证是否允许商用
+- [ ] 采样率
 
 ---
 
-### 2. ESC-50: Environmental Sound Classification
+### 2. Infant Cry Dataset (Sanmitha Sadish)
 
-**链接：** https://github.com/karolden/ESC-50
+**链接:** https://www.kaggle.com/datasets/sanmithasadhish/infant-cry-dataset
 
-**特点：**
-- 2000 个 5 秒录音
-- 50 个类别，其中包含 "Crying baby"
-- 高质量，学术常用
-- 许可证：CC-BY
-
-**缺点：**
-- 只有"婴儿哭"一个类别，无法区分哭声类型
-- 适合作为**哭声检测**（有没有哭），不适合**哭声分类**（为什么哭）
-
-**用途：** 可用于 Phase 1 的哭声检测原型
-
----
-
-### 3. Donate-a-Cry (学术数据集)
-
-**链接：** 需要学术申请
-
-**特点：**
-- 专门收集婴儿哭声
+**特点:**
+- 学术用途数据集
 - 可能有详细标注
-- 学术用途免费
 
-**缺点：**
-- 需要申请审批
-- 可能有使用限制
-
----
-
-### 4. BabySound / Infant Audio Dataset
-
-**链接：** 需搜索确认
-
-**特点：**
-- 较新的开源数据集
-- 可能包含多种哭声类型
-
-**待确认：**
-- [ ] 具体链接
+**待确认:**
+- [ ] 分类标签
 - [ ] 数据量
-- [ ] 标注质量
+- [ ] 许可证
 
 ---
 
-## 推荐方案
+## 📥 下载方法
 
-### 方案 A：组合使用（推荐）
+### 方法 A: Kaggle CLI (推荐)
 
-| 阶段 | 数据集 | 用途 |
-|------|--------|------|
-| Phase 1 (原型) | ESC-50 | 哭声检测（有/无哭声） |
-| Phase 2 (分类) | Kaggle 哭声数据集 | 哭声类型分类 |
-| Phase 3 (优化) | 自行收集 + 标注 | 提升准确率 |
+```bash
+# 1. 安装 Kaggle CLI
+pip install kaggle
 
-**优点：**
-- 快速开始（ESC-50 立即可用）
-- 逐步迭代
-- 后期可加入自己的数据
+# 2. 配置 API Token
+# 去 https://www.kaggle.com/account -> Create New API Token
+# 下载 kaggle.json，放到 ~/.kaggle/kaggle.json
+chmod 600 ~/.kaggle/kaggle.json
 
----
+# 3. 下载数据集
+cd baby-cry-app/ml/data/raw
 
-### 方案 B：只用 Kaggle 数据集
+# 数据集 1
+kaggle datasets download -d mennaahmed23/baby-crying-sounds-dataset
+unzip baby-crying-sounds-dataset.zip
 
-如果能找到一个标注好的哭声分类数据集，可以直接开始训练分类模型。
+# 数据集 2
+kaggle datasets download -d sanmithasadhish/infant-cry-dataset
+unzip infant-cry-dataset.zip
+```
 
-**需要确认：**
-1. 数据量是否足够（建议 > 1000 条）
-2. 类别是否匹配（饥饿/困倦/不适/正常）
-3. 音频质量（采样率、噪音水平）
-4. 许可证（能否用于本项目）
+### 方法 B: 浏览器下载
 
----
-
-## 数据收集计划（后期）
-
-如果公开数据集不够用，可以考虑：
-
-### 自行收集
-- 录制志愿者婴儿的哭声（需家长同意）
-- 标注每段哭声的原因（家长提供）
-- 注意隐私和伦理问题
-
-### 数据增强
-- 添加背景噪音
-- 变调/变速
-- 混响效果
-- 增加数据多样性
+1. 打开数据集链接
+2. 点击 "Download" 按钮
+3. 解压到 `ml/data/raw/` 目录
 
 ---
 
-## 数据预处理流程
+## 📁 数据目录结构
 
 ```
-原始音频
-    ↓
-降噪处理
-    ↓
-标准化 (16kHz, 单声道)
-    ↓
-特征提取 (MFCC/Mel 频谱)
-    ↓
-训练/测试分割 (80/20)
-    ↓
-模型训练
+ml/data/
+├── raw/                    # 原始数据（下载后）
+│   ├── baby-crying-sounds-dataset/
+│   └── infant-cry-dataset/
+│
+├── processed/              # 处理后数据（运行预处理脚本后）
+│   ├── train/
+│   │   ├── hungry/
+│   │   ├── sleepy/
+│   │   ├── uncomfortable/
+│   │   └── normal/
+│   └── val/
+│       ├── hungry/
+│       ├── sleepy/
+│       ├── uncomfortable/
+│       └── normal/
+│
+└── metadata/
+    ├── class_mapping.json
+    └── dataset_stats.json
 ```
 
 ---
 
-## 下一步
+## 🔧 数据预处理
 
-### 需要 Li 确认的事项：
+### 步骤 1: 探索数据集
 
-1. **去 Kaggle 搜索** "baby cry classification"
-   - 找到合适的数据集
-   - 确认数据量和标签
-   - 确认许可证
+```bash
+cd baby-cry-app/ml
+python scripts/explore_data.py
+```
 
-2. **决定数据集策略**
-   - 方案 A：ESC-50 + Kaggle 组合
-   - 方案 B：只用 Kaggle
+### 步骤 2: 预处理音频
 
-3. **下载数据集**
-   - 放到 `ml/data/raw/` 目录
-   - 记录数据来源和许可证
+```bash
+python scripts/preprocess_audio.py \
+  --input_dir data/raw \
+  --output_dir data/processed \
+  --target_sr 16000 \
+  --duration 5
+```
+
+### 步骤 3: 提取特征
+
+```bash
+python scripts/extract_features.py \
+  --input_dir data/processed \
+  --output_dir data/features \
+  --n_mels 128
+```
 
 ---
 
-## 参考资源
+## 🏷️ 分类标签映射
 
-- **Kaggle:** https://www.kaggle.com/datasets?query=baby+cry
-- **ESC-50:** https://github.com/karolden/ESC-50
-- **音频特征提取库:** https://librosa.org/
+根据我们的需求，需要将数据集标签映射到：
+
+| 内部标签 | 可能的原始标签 | 说明 |
+|----------|---------------|------|
+| `hungry` | hungry, hunger, feeding | 饿了 |
+| `sleepy` | sleepy, tired, sleep | 困了 |
+| `uncomfortable` | pain, discomfort, sick | 不舒服/疼痛 |
+| `normal` | normal, neutral, baseline | 正常哭声 |
 
 ---
 
-🦞 Li，你有空去 Kaggle 看看，找到合适的数据集告诉我链接！
+## 📊 数据集统计（待更新）
+
+下载并探索后运行：
+```bash
+python scripts/dataset_stats.py
+```
+
+预期输出：
+```json
+{
+  "total_samples": 0,
+  "total_duration_hours": 0,
+  "class_distribution": {},
+  "average_duration_seconds": 0,
+  "sample_rate": 0,
+  "format": ""
+}
+```
+
+---
+
+## ⚠️ 注意事项
+
+1. **许可证:** 确认数据集允许商用/修改
+2. **隐私:** 婴儿音频数据需妥善处理
+3. **质量:** 检查音频质量（噪音、采样率）
+4. **平衡:** 各类别样本数量是否平衡
+
+---
+
+## 🦞 下一步
+
+1. **Li 下载数据集** - 用 Kaggle CLI 或浏览器
+2. **放到 `ml/data/raw/`** - 解压
+3. **运行探索脚本** - `python scripts/explore_data.py`
+4. **确认标签映射** - 根据实际数据集调整
+5. **开始预处理** - 提取 Mel 频谱特征
+
+---
+
+## 📚 参考资源
+
+- **Kaggle API 文档:** https://www.kaggle.com/docs/api
+- **Librosa 文档:** https://librosa.org/doc/latest/
+- **音频特征提取:** https://www.tensorflow.org/tutorials/audio/transfer_learning_audio
