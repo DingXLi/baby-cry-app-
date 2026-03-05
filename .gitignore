@@ -20,6 +20,9 @@ ml/models/*.h5
 ml/models/*.pth
 ml/export/*.tflite
 ml/data/raw/
+ml/data/prepared/
+ml/data/processed/
+ml/data/features/
 
 # IDE
 .idea/
