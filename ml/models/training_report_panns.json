@@ -1,0 +1,8 @@
+{
+  "best_accuracy": 0.4663677130044843,
+  "epochs_trained": 22,
+  "model": "SimpleTransfer",
+  "version": "panns",
+  "feature_dim": 168,
+  "notes": "PANNs \u8fc1\u79fb\u5b66\u4e60 - \u7c7b\u522b\u6743\u91cd + \u6570\u636e\u589e\u5f3a\u7279\u5f81"
+}

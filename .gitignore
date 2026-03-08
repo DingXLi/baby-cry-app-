@@ -18,11 +18,13 @@ build/
 # ML models (large files)
 ml/models/*.h5
 ml/models/*.pth
+ml/models/*.bin
 ml/export/*.tflite
 ml/data/raw/
 ml/data/prepared/
 ml/data/processed/
 ml/data/features/
+ml/data/features_v2/
 
 # IDE
 .idea/

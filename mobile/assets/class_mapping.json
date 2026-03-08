@@ -1,0 +1,11 @@
+{
+  "classes": [
+    "hungry",
+    "sleepy",
+    "uncomfortable",
+    "normal"
+  ],
+  "input_dim": 168,
+  "model_version": "v3",
+  "accuracy": 0.5157
+}

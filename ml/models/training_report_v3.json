@@ -1,0 +1,8 @@
+{
+  "best_accuracy": 0.515695067264574,
+  "epochs_trained": 34,
+  "model": "FeatureClassifier",
+  "version": "v3",
+  "feature_dim": 168,
+  "notes": "168 \u7ef4\u7279\u5f81 (MFCC+Delta+ZCR+Mel)"
+}

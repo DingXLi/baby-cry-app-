@@ -13,12 +13,19 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import CryRecognitionService from '../services/CryRecognitionService';
+import NotificationService from '../services/NotificationService';
 
 export default function HomeScreen() {
   const [isListening, setIsListening] = useState(false);
   const [lastCryType, setLastCryType] = useState(null);
   const [lastCryTime, setLastCryTime] = useState(null);
   const [pulseAnim] = useState(new Animated.Value(1));
+  
+  // 模型配置
+  const MODEL_CONFIG = {
+    threshold: 0.5,
+  };
 
   // 脉冲动画效果
   useEffect(() => {
@@ -44,7 +51,7 @@ export default function HomeScreen() {
     }
   }, [isListening]);
 
-  const toggleListening = () => {
+  const toggleListening = async () => {
     if (isListening) {
       Alert.alert(
         '停止监听',
@@ -61,9 +68,34 @@ export default function HomeScreen() {
         ]
       );
     } else {
+      // 初始化识别服务
+      await CryRecognitionService.initialize();
       setIsListening(true);
-      // TODO: 实现音频采集和哭声识别
+      
+      // 模拟检测循环
+      simulateDetection();
     }
+  };
+
+  const simulateDetection = async () => {
+    // 模拟每 5 秒检测一次
+    setTimeout(async () => {
+      if (!isListening) return;
+      
+      // 调用识别服务
+      const result = await CryRecognitionService.recognize('test_audio.wav');
+      
+      if (result && result.confidence > MODEL_CONFIG.threshold) {
+        setLastCryType(result.type);
+        setLastCryTime(new Date().toLocaleTimeString('zh-CN'));
+        
+        // 发送通知
+        await NotificationService.sendCryAlert(result.type, result.confidence);
+      }
+      
+      // 继续检测
+      simulateDetection();
+    }, 5000);
   };
 
   const getCryTypeIcon = (type) => {

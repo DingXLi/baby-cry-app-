@@ -1,0 +1,22 @@
+{
+  "best_accuracy": 0.4845605700712589,
+  "epochs_trained": 27,
+  "train_samples": 1687,
+  "val_samples": 421,
+  "class_names": [
+    "hungry",
+    "sleepy",
+    "uncomfortable",
+    "normal"
+  ],
+  "framework": "pytorch",
+  "version": "v2",
+  "optimizations": [
+    "\u6570\u636e\u589e\u5f3a (\u7ffb\u8f6c/\u65cb\u8f6c/\u566a\u58f0/Cutout)",
+    "\u66f4\u6df1\u7684\u7f51\u7edc (4 \u4e2a Block)",
+    "\u7c7b\u522b\u6743\u91cd (\u5904\u7406\u4e0d\u5e73\u8861)",
+    "Cosine \u5b66\u4e60\u7387\u8c03\u5ea6",
+    "AdamW \u4f18\u5316\u5668",
+    "\u65e9\u505c (patience=15)"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "best_accuracy": 0.4916864608076009,
+  "epochs_trained": 30,
+  "train_samples": 1687,
+  "val_samples": 421,
+  "class_names": [
+    "hungry",
+    "sleepy",
+    "uncomfortable",
+    "normal"
+  ],
+  "framework": "pytorch"
+}
