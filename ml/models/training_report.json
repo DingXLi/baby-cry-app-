@@ -15,8 +15,8 @@
     "normal": "正常"
   },
   "val_accuracy": 1.0,
-  "cv_mean": 0.9991666666666668,
-  "cv_std": 0.0016666666666666607,
-  "train_samples": 960,
-  "val_samples": 240
+  "cv_mean": 1.0,
+  "cv_std": 0.0,
+  "train_samples": 192,
+  "val_samples": 48
 }

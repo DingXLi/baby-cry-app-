@@ -1,0 +1,147 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ─── 后端测试 ────────────────────────────────────────────────────────────────
+  backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB:       test_db
+          POSTGRES_USER:     test_user
+          POSTGRES_PASSWORD: test_pass
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    env:
+      NODE_ENV:     test
+      DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/test_db
+      JWT_SECRET:   test-secret-key-for-ci
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Lint
+        working-directory: backend
+        run: npm run lint --if-present
+
+      - name: Test
+        working-directory: backend
+        run: npm test --if-present
+
+      - name: Health check (start server)
+        working-directory: backend
+        run: |
+          node src/index.js &
+          sleep 3
+          curl -f http://localhost:3000/health
+          kill %1
+
+  # ─── 移动端 Lint ─────────────────────────────────────────────────────────────
+  mobile-lint:
+    name: Mobile Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        working-directory: mobile
+        run: npm install --legacy-peer-deps
+
+      - name: Lint
+        working-directory: mobile
+        run: npm run lint --if-present
+
+  # ─── ML 管线测试 ──────────────────────────────────────────────────────────────
+  ml-pipeline:
+    name: ML Pipeline Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: ml/requirements.txt
+
+      - name: Install core ML dependencies
+        run: pip install numpy scikit-learn onnx skl2onnx soundfile librosa
+
+      - name: Generate synthetic audio
+        working-directory: ml
+        run: python scripts/generate_synthetic_audio.py --samples_per_class 20
+
+      - name: Extract features
+        working-directory: ml
+        run: python scripts/extract_features.py --input_dir data/raw --output_dir data/features
+
+      - name: Train and export model
+        working-directory: ml
+        run: python scripts/train_classifier.py --data_dir data/features --output_dir models
+
+      - name: Export JS model
+        working-directory: ml
+        run: python scripts/export_model_js.py --model_dir models --output ../mobile/assets/model.json
+
+      - name: Validate ONNX model
+        working-directory: ml
+        run: |
+          python -c "
+          import onnx
+          m = onnx.load('models/cry_classifier.onnx')
+          onnx.checker.check_model(m)
+          print('✅ ONNX OK')
+          "
+
+  # ─── Docker 构建 ─────────────────────────────────────────────────────────────
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: docker build -t baby-cry-backend:test ./backend
+
+      - name: Smoke test container
+        run: |
+          docker run -d --name test-backend \
+            -e NODE_ENV=test \
+            -e JWT_SECRET=test-key \
+            -p 3001:3000 \
+            baby-cry-backend:test
+          sleep 5
+          curl -f http://localhost:3001/health
+          docker stop test-backend
