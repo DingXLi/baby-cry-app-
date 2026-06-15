@@ -5,7 +5,13 @@
     "uncomfortable",
     "normal"
   ],
+  "classes_cn": {
+    "hungry": "饿了",
+    "sleepy": "困了",
+    "uncomfortable": "不舒服",
+    "normal": "正常"
+  },
   "input_dim": 168,
-  "model_version": "v3",
-  "accuracy": 0.5157
+  "model_version": "1.0",
+  "accuracy": 1.0
 }

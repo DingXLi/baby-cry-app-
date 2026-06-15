@@ -1,27 +1,28 @@
 # ML Training Requirements
-tensorflow>=2.15.0
-tensorflow-io>=0.34.0
+# ────────────────────────────────────────────────────────────
+# Core (required for train_classifier.py & generate_synthetic_data.py)
+numpy>=1.24.0
+scikit-learn>=1.3.0
+onnx>=1.15.0
+skl2onnx>=1.16.0        # sklearn → ONNX export
 
-# Audio Processing
+# Audio Processing (required for preprocess_audio.py & extract_features.py)
 librosa>=0.10.0
 soundfile>=0.12.1
 audioread>=3.0.0
 
-# Data Processing
-numpy>=1.24.0
-pandas>=2.0.0
-scikit-learn>=1.3.0
-
-# Visualization
-matplotlib>=3.7.0
-seaborn>=0.12.0
-
-# Model Export
+# Deep Learning (optional, for CNN training via train_model.py)
+tensorflow>=2.15.0
+tensorflow-io>=0.34.0
 tf2onnx>=1.16.0
-onnx>=1.15.0
+
+# Inference Testing
 onnxruntime>=1.16.0
 
-# Utilities
+# Data Processing & Utilities
+pandas>=2.0.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
 tqdm>=4.65.0
 pyyaml>=6.0
 

@@ -1,13 +1,22 @@
 {
-  "best_accuracy": 0.4916864608076009,
-  "epochs_trained": 30,
-  "train_samples": 1687,
-  "val_samples": 421,
-  "class_names": [
+  "model_type": "GradientBoosting",
+  "input_dim": 168,
+  "num_classes": 4,
+  "classes": [
     "hungry",
     "sleepy",
     "uncomfortable",
     "normal"
   ],
-  "framework": "pytorch"
+  "classes_cn": {
+    "hungry": "饿了",
+    "sleepy": "困了",
+    "uncomfortable": "不舒服",
+    "normal": "正常"
+  },
+  "val_accuracy": 1.0,
+  "cv_mean": 0.9991666666666668,
+  "cv_std": 0.0016666666666666607,
+  "train_samples": 960,
+  "val_samples": 240
 }
