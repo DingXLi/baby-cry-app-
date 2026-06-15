@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CryRecognitionService from '../services/CryRecognitionService';
+import AudioService from '../services/AudioService';
 import StorageService from '../services/StorageService';
 import NotificationService from '../services/NotificationService';
 
@@ -45,22 +46,40 @@ export default function HomeScreen() {
     listeningRef.current = isListening;
     if (isListening) {
       startPulse();
-      scheduleNextDetection();
+      startAudio();
     } else {
       stopPulse();
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
+      AudioService.stopListening();
     }
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      AudioService.stopListening();
     };
   }, [isListening]);
 
   const loadTodayCount = async () => {
     const today = await StorageService.getTodayRecords();
     setTodayCount(today.length);
+  };
+
+  const startAudio = async () => {
+    try {
+      await AudioService.startListening(async (uri) => {
+        if (!listeningRef.current) return;
+        await runDetection(uri);
+      });
+    } catch (err) {
+      console.warn('AudioService start failed:', err.message);
+      // Fallback: 模拟检测（开发环境）
+      scheduleNextDetection();
+    }
+  };
+
+  const scheduleNextDetection = () => {
+    timerRef.current = setTimeout(async () => {
+      if (!listeningRef.current) return;
+      await runDetection('simulated://recording.wav');
+      scheduleNextDetection();
+    }, 5000);
   };
 
   const startPulse = () => {
@@ -85,9 +104,9 @@ export default function HomeScreen() {
     }, DETECTION_INTERVAL_MS);
   };
 
-  const runDetection = async () => {
+  const runDetection = async (uri) => {
     try {
-      const result = await CryRecognitionService.recognize('recording.wav');
+      const result = await CryRecognitionService.recognize(uri || 'recording.wav');
       if (!result || result.confidence < CONFIDENCE_THRESHOLD) return;
 
       setLastResult(result);
