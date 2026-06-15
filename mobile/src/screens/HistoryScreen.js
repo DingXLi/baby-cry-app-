@@ -3,222 +3,221 @@
  * 🦞 虾虾开发
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
   View,
   FlatList,
   TouchableOpacity,
+  Alert,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import StorageService from '../services/StorageService';
 
-// 模拟数据（后续替换为真实数据）
-const MOCK_DATA = [
-  {
-    id: '1',
-    cryType: 'hungry',
-    confidence: 0.92,
-    timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 分钟前
-    duration: 5.2,
-  },
-  {
-    id: '2',
-    cryType: 'sleepy',
-    confidence: 0.87,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 小时前
-    duration: 3.8,
-  },
-  {
-    id: '3',
-    cryType: 'uncomfortable',
-    confidence: 0.95,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5), // 5 小时前
-    duration: 8.1,
-  },
-];
+const CRY_META = {
+  hungry:        { icon: 'restaurant', color: '#FF9F43', text: '饿了' },
+  sleepy:        { icon: 'moon',       color: '#5F27CD', text: '困了' },
+  uncomfortable: { icon: 'warning',    color: '#FF6B6B', text: '不舒服' },
+  normal:        { icon: 'happy',      color: '#1DD1A1', text: '正常' },
+};
+
+function timeAgo(date) {
+  const diff = Date.now() - new Date(date).getTime();
+  const m = Math.floor(diff / 60000);
+  const h = Math.floor(diff / 3600000);
+  const d = Math.floor(diff / 86400000);
+  if (m < 1) return '刚刚';
+  if (m < 60) return `${m}分钟前`;
+  if (h < 24) return `${h}小时前`;
+  return `${d}天前`;
+}
 
 export default function HistoryScreen() {
-  const [records, setRecords] = useState(MOCK_DATA);
+  const [records, setRecords] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [filter, setFilter] = useState('all');
 
-  const getCryTypeIcon = (type) => {
-    const icons = {
-      hungry: 'restaurant',
-      sleepy: 'moon',
-      uncomfortable: 'warning',
-      normal: 'happy',
-    };
-    return icons[type] || 'help-circle';
+  const loadRecords = useCallback(async () => {
+    const all = await StorageService.getAllRecords();
+    setRecords(all);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadRecords();
+    }, [loadRecords])
+  );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadRecords();
+    setRefreshing(false);
   };
 
-  const getCryTypeColor = (type) => {
-    const colors = {
-      hungry: '#FF9F43',
-      sleepy: '#5F27CD',
-      uncomfortable: '#FF6B6B',
-      normal: '#1DD1A1',
-    };
-    return colors[type] || '#ccc';
+  const handleDelete = (id) => {
+    Alert.alert('删除记录', '确定要删除这条记录吗？', [
+      { text: '取消', style: 'cancel' },
+      {
+        text: '删除',
+        style: 'destructive',
+        onPress: async () => {
+          await StorageService.deleteRecord(id);
+          setRecords((prev) => prev.filter((r) => r.id !== id));
+        },
+      },
+    ]);
   };
 
-  const getCryTypeText = (type) => {
-    const texts = {
-      hungry: '饿了',
-      sleepy: '困了',
-      uncomfortable: '不舒服',
-      normal: '正常',
-    };
-    return texts[type] || '未知';
+  const handleClearAll = () => {
+    Alert.alert('清空记录', '确定要删除所有记录吗？此操作不可撤销。', [
+      { text: '取消', style: 'cancel' },
+      {
+        text: '清空',
+        style: 'destructive',
+        onPress: async () => {
+          await StorageService.clearAllRecords();
+          setRecords([]);
+        },
+      },
+    ]);
   };
 
-  const formatTime = (date) => {
-    const now = new Date();
-    const diff = now - date;
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
+  const FILTERS = [
+    { key: 'all', label: '全部' },
+    { key: 'hungry', label: '饿了' },
+    { key: 'sleepy', label: '困了' },
+    { key: 'uncomfortable', label: '不舒服' },
+    { key: 'normal', label: '正常' },
+  ];
 
-    if (minutes < 1) return '刚刚';
-    if (minutes < 60) return `${minutes}分钟前`;
-    if (hours < 24) return `${hours}小时前`;
-    return `${days}天前`;
+  const filtered = filter === 'all' ? records : records.filter((r) => r.cryType === filter);
+
+  const renderRecord = ({ item }) => {
+    const meta = CRY_META[item.cryType] || CRY_META.normal;
+    return (
+      <TouchableOpacity
+        style={styles.recordCard}
+        activeOpacity={0.75}
+        onLongPress={() => handleDelete(item.id)}
+      >
+        <View style={[styles.iconWrap, { backgroundColor: meta.color + '20' }]}>
+          <Ionicons name={meta.icon} size={24} color={meta.color} />
+        </View>
+        <View style={styles.recordInfo}>
+          <Text style={styles.recordType}>{meta.text}</Text>
+          <Text style={styles.recordTime}>{timeAgo(item.timestamp)}</Text>
+        </View>
+        <View style={styles.recordMeta}>
+          <Text style={[styles.confidence, { color: meta.color }]}>
+            {(item.confidence * 100).toFixed(0)}%
+          </Text>
+          {item.duration ? (
+            <Text style={styles.duration}>{item.duration.toFixed(1)}s</Text>
+          ) : null}
+        </View>
+      </TouchableOpacity>
+    );
   };
 
-  const renderRecord = ({ item }) => (
-    <TouchableOpacity style={styles.recordCard} activeOpacity={0.7}>
-      <View style={[styles.iconContainer, { backgroundColor: getCryTypeColor(item.cryType) + '20' }]}>
-        <Ionicons
-          name={getCryTypeIcon(item.cryType)}
-          size={24}
-          color={getCryTypeColor(item.cryType)}
-        />
+  const ListHeader = () => (
+    <View style={styles.listHeader}>
+      <View style={styles.countRow}>
+        <Text style={styles.countTitle}>共 {filtered.length} 条记录</Text>
+        {records.length > 0 && (
+          <TouchableOpacity onPress={handleClearAll}>
+            <Text style={styles.clearBtn}>清空</Text>
+          </TouchableOpacity>
+        )}
       </View>
-      <View style={styles.recordInfo}>
-        <Text style={styles.recordType}>{getCryTypeText(item.cryType)}</Text>
-        <Text style={styles.recordTime}>{formatTime(item.timestamp)}</Text>
+      {/* Filter chips */}
+      <View style={styles.filterRow}>
+        {FILTERS.map((f) => (
+          <TouchableOpacity
+            key={f.key}
+            style={[styles.chip, filter === f.key && styles.chipActive]}
+            onPress={() => setFilter(f.key)}
+          >
+            <Text style={[styles.chipText, filter === f.key && styles.chipTextActive]}>
+              {f.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
-      <View style={styles.recordMeta}>
-        <Text style={styles.confidence}>{(item.confidence * 100).toFixed(0)}%</Text>
-        <Text style={styles.duration}>{item.duration.toFixed(1)}s</Text>
-      </View>
-    </TouchableOpacity>
+    </View>
   );
 
   return (
     <View style={styles.container}>
       {records.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="time-outline" size={80} color="#ccc" />
-          <Text style={styles.emptyText}>暂无记录</Text>
-          <Text style={styles.emptySubtext}>开始监听后，哭声记录会显示在这里</Text>
+        <View style={styles.empty}>
+          <Ionicons name="time-outline" size={72} color="#ddd" />
+          <Text style={styles.emptyTitle}>暂无记录</Text>
+          <Text style={styles.emptyHint}>开始监听后，哭声记录会显示在这里</Text>
         </View>
       ) : (
-        <>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>今日记录</Text>
-            <Text style={styles.headerCount}>{records.length} 条</Text>
-          </View>
-          <FlatList
-            data={records}
-            renderItem={renderRecord}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContainer}
-            showsVerticalScrollIndicator={false}
-          />
-        </>
+        <FlatList
+          data={filtered}
+          renderItem={renderRecord}
+          keyExtractor={(item) => item.id}
+          ListHeaderComponent={ListHeader}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#FF6B6B']} />}
+        />
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  listHeader: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
+  countRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  countTitle: { fontSize: 15, fontWeight: '600', color: '#555' },
+  clearBtn: { fontSize: 14, color: '#FF6B6B' },
+  filterRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  headerCount: {
-    fontSize: 14,
-    color: '#999',
-  },
-  listContainer: {
-    padding: 20,
-  },
+  chipActive: { backgroundColor: '#FF6B6B', borderColor: '#FF6B6B' },
+  chipText: { fontSize: 13, color: '#666' },
+  chipTextActive: { color: '#fff', fontWeight: '600' },
+  list: { padding: 16 },
   recordCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 15,
+    padding: 14,
     marginBottom: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
     shadowRadius: 4,
-    elevation: 4,
+    elevation: 3,
   },
-  iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+  iconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  recordInfo: {
-    flex: 1,
-    marginLeft: 15,
-  },
-  recordType: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  recordTime: {
-    fontSize: 13,
-    color: '#999',
-  },
-  recordMeta: {
-    alignItems: 'flex-end',
-  },
-  confidence: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1DD1A1',
-    marginBottom: 2,
-  },
-  duration: {
-    fontSize: 12,
-    color: '#999',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#999',
-    marginTop: 20,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#ccc',
-    marginTop: 8,
-    textAlign: 'center',
-  },
+  recordInfo: { flex: 1, marginLeft: 14 },
+  recordType: { fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 3 },
+  recordTime: { fontSize: 13, color: '#aaa' },
+  recordMeta: { alignItems: 'flex-end' },
+  confidence: { fontSize: 15, fontWeight: '700', marginBottom: 2 },
+  duration: { fontSize: 12, color: '#bbb' },
+  empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
+  emptyTitle: { fontSize: 18, fontWeight: '600', color: '#ccc', marginTop: 16 },
+  emptyHint: { fontSize: 14, color: '#ddd', marginTop: 8, textAlign: 'center' },
 });

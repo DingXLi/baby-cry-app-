@@ -3,7 +3,7 @@
  * 🦞 虾虾开发
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,241 +11,239 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
+  Alert,
+  Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import StorageService from '../services/StorageService';
+
+const APP_VERSION = '0.2.0';
 
 export default function SettingsScreen() {
-  const [notifications, setNotifications] = useState(true);
-  const [backgroundMonitoring, setBackgroundMonitoring] = useState(false);
-  const [vibration, setVibration] = useState(true);
-  const [sound, setSound] = useState(true);
+  const [settings, setSettings] = useState({
+    notifications: true,
+    sound: true,
+    vibration: true,
+    backgroundMonitoring: false,
+  });
 
-  const SettingItem = ({ icon, title, description, value, onValueChange, type = 'switch' }) => (
+  useEffect(() => {
+    StorageService.getSettings().then(setSettings);
+  }, []);
+
+  const updateSetting = async (key, value) => {
+    const updated = { ...settings, [key]: value };
+    setSettings(updated);
+    await StorageService.updateSettings({ [key]: value });
+  };
+
+  const handleExport = async () => {
+    try {
+      const csv = await StorageService.exportCSV();
+      if (!csv || csv.split('\n').length <= 1) {
+        Alert.alert('提示', '暂无记录可导出');
+        return;
+      }
+      await Share.share({ message: csv, title: '哭声记录导出' });
+    } catch {
+      Alert.alert('错误', '导出失败');
+    }
+  };
+
+  const handleClearData = () => {
+    Alert.alert('清除数据', '确定要删除所有本地记录吗？此操作不可撤销。', [
+      { text: '取消', style: 'cancel' },
+      {
+        text: '清除',
+        style: 'destructive',
+        onPress: async () => {
+          await StorageService.clearAllRecords();
+          Alert.alert('完成', '所有记录已清除');
+        },
+      },
+    ]);
+  };
+
+  const SettingSwitch = ({ icon, iconBg, title, description, settingKey }) => (
     <View style={styles.settingItem}>
-      <View style={styles.settingLeft}>
-        <View style={[styles.iconContainer, { backgroundColor: '#FFF5F5' }]}>
-          <Ionicons name={icon} size={24} color="#FF6B6B" />
-        </View>
-        <View style={styles.settingText}>
-          <Text style={styles.settingTitle}>{title}</Text>
-          {description && <Text style={styles.settingDescription}>{description}</Text>}
-        </View>
+      <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
+        <Ionicons name={icon} size={22} color="#FF6B6B" />
       </View>
-      {type === 'switch' && (
-        <Switch
-          value={value}
-          onValueChange={onValueChange}
-          trackColor={{ false: '#ddd', true: '#FF6B6B' }}
-          thumbColor="#fff"
-        />
-      )}
-      {type === 'arrow' && (
-        <Ionicons name="chevron-forward" size={24} color="#ccc" />
-      )}
+      <View style={styles.settingText}>
+        <Text style={styles.settingTitle}>{title}</Text>
+        {description && <Text style={styles.settingDesc}>{description}</Text>}
+      </View>
+      <Switch
+        value={settings[settingKey]}
+        onValueChange={(v) => updateSetting(settingKey, v)}
+        trackColor={{ false: '#ddd', true: '#FF6B6B' }}
+        thumbColor="#fff"
+      />
     </View>
+  );
+
+  const SettingAction = ({ icon, iconBg, iconColor, title, description, onPress, danger }) => (
+    <TouchableOpacity style={styles.settingItem} onPress={onPress} activeOpacity={0.7}>
+      <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
+        <Ionicons name={icon} size={22} color={iconColor || '#FF6B6B'} />
+      </View>
+      <View style={styles.settingText}>
+        <Text style={[styles.settingTitle, danger && { color: '#E91E63' }]}>{title}</Text>
+        {description && <Text style={styles.settingDesc}>{description}</Text>}
+      </View>
+      <Ionicons name="chevron-forward" size={20} color="#ccc" />
+    </TouchableOpacity>
   );
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* 通知设置 */}
+      {/* 通知 */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>通知</Text>
-        <SettingItem
+        <SettingSwitch
           icon="notifications"
+          iconBg="#FFF5F5"
           title="推送通知"
           description="检测到哭声时发送通知"
-          value={notifications}
-          onValueChange={setNotifications}
+          settingKey="notifications"
         />
-        <SettingItem
+        <SettingSwitch
           icon="volume-high"
+          iconBg="#FFF5F5"
           title="声音提醒"
           description="播放提示音"
-          value={sound}
-          onValueChange={setSound}
+          settingKey="sound"
         />
-        <SettingItem
+        <SettingSwitch
           icon="phone-portrait"
+          iconBg="#FFF5F5"
           title="振动"
           description="检测到哭声时振动"
-          value={vibration}
-          onValueChange={setVibration}
+          settingKey="vibration"
         />
       </View>
 
-      {/* 监听设置 */}
+      {/* 监听 */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>监听</Text>
-        <SettingItem
+        <SettingSwitch
           icon="moon"
+          iconBg="#F3E5F5"
           title="后台监听"
           description="应用后台运行时继续监听"
-          value={backgroundMonitoring}
-          onValueChange={setBackgroundMonitoring}
+          settingKey="backgroundMonitoring"
         />
-        <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
-          <View style={styles.settingLeft}>
-            <View style={[styles.iconContainer, { backgroundColor: '#E8F5E9' }]}>
-              <Ionicons name="time" size={24} color="#4CAF50" />
-            </View>
-            <View style={styles.settingText}>
-              <Text style={styles.settingTitle}>监听时间段</Text>
-              <Text style={styles.settingDescription}>设置自动监听的时间</Text>
-            </View>
-          </View>
-          <Ionicons name="chevron-forward" size={24} color="#ccc" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
-          <View style={styles.settingLeft}>
-            <View style={[styles.iconContainer, { backgroundColor: '#FFF3E0' }]}>
-              <Ionicons name="sensitivity" size={24} color="#FF9800" />
-            </View>
-            <View style={styles.settingText}>
-              <Text style={styles.settingTitle}>灵敏度</Text>
-              <Text style={styles.settingDescription}>调整哭声检测灵敏度</Text>
-            </View>
-          </View>
-          <Ionicons name="chevron-forward" size={24} color="#ccc" />
-        </TouchableOpacity>
+        <SettingAction
+          icon="time"
+          iconBg="#E8F5E9"
+          iconColor="#4CAF50"
+          title="监听时间段"
+          description="设置自动监听的时间范围"
+          onPress={() => Alert.alert('提示', '该功能即将上线')}
+        />
+        <SettingAction
+          icon="options"
+          iconBg="#FFF3E0"
+          iconColor="#FF9800"
+          title="灵敏度"
+          description="调整哭声检测灵敏度"
+          onPress={() => Alert.alert('提示', '该功能即将上线')}
+        />
       </View>
 
-      {/* 数据管理 */}
+      {/* 数据 */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>数据</Text>
-        <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
-          <View style={styles.settingLeft}>
-            <View style={[styles.iconContainer, { backgroundColor: '#E3F2FD' }]}>
-              <Ionicons name="cloud-download" size={24} color="#2196F3" />
-            </View>
-            <View style={styles.settingText}>
-              <Text style={styles.settingTitle">导出记录</Text>
-              <Text style={styles.settingDescription}>导出哭声记录为 CSV</Text>
-            </View>
-          </View>
-          <Ionicons name="chevron-forward" size={24} color="#ccc" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
-          <View style={styles.settingLeft}>
-            <View style={[styles.iconContainer, { backgroundColor: '#FCE4EC' }]}>
-              <Ionicons name="trash" size={24} color="#E91E63" />
-            </View>
-            <View style={styles.settingText}>
-              <Text style={styles.settingTitle}>清除数据</Text>
-              <Text style={styles.settingDescription}>删除所有本地记录</Text>
-            </View>
-          </View>
-          <Ionicons name="chevron-forward" size={24} color="#ccc" />
-        </TouchableOpacity>
+        <SettingAction
+          icon="cloud-download"
+          iconBg="#E3F2FD"
+          iconColor="#2196F3"
+          title="导出记录"
+          description="将哭声记录导出为 CSV"
+          onPress={handleExport}
+        />
+        <SettingAction
+          icon="trash"
+          iconBg="#FCE4EC"
+          iconColor="#E91E63"
+          title="清除数据"
+          description="删除所有本地记录"
+          onPress={handleClearData}
+          danger
+        />
       </View>
 
       {/* 关于 */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>关于</Text>
-        <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
-          <View style={styles.settingLeft}>
-            <View style={[styles.iconContainer, { backgroundColor: '#F3E5F5' }]}>
-              <Ionicons name="information-circle" size={24} color="#9C27B0" />
-            </View>
-            <View style={styles.settingText}>
-              <Text style={styles.settingTitle}>应用版本</Text>
-              <Text style={styles.settingDescription}>Version 0.1.0</Text>
-            </View>
+        <View style={styles.settingItem}>
+          <View style={[styles.iconWrap, { backgroundColor: '#F3E5F5' }]}>
+            <Ionicons name="information-circle" size={22} color="#9C27B0" />
           </View>
-          <Ionicons name="chevron-forward" size={24} color="#ccc" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
-          <View style={styles.settingLeft}>
-            <View style={[styles.iconContainer, { backgroundColor: '#E0F2F1' }]}>
-              <Ionicons name="star" size={24} color="#009688" />
-            </View>
-            <View style={styles.settingText}>
-              <Text style={styles.settingTitle}>给个好评</Text>
-              <Text style={styles.settingDescription">支持虾虾开发</Text>
-            </View>
+          <View style={styles.settingText}>
+            <Text style={styles.settingTitle}>应用版本</Text>
+            <Text style={styles.settingDesc}>Version {APP_VERSION}</Text>
           </View>
-          <Ionicons name="chevron-forward" size={24} color="#ccc" />
-        </TouchableOpacity>
+        </View>
+        <SettingAction
+          icon="star"
+          iconBg="#E0F2F1"
+          iconColor="#009688"
+          title="给个好评"
+          description="支持虾虾开发"
+          onPress={() => Alert.alert('谢谢！', '您的支持是我们最大的动力 🦞')}
+        />
       </View>
 
-      {/* 底部信息 */}
       <View style={styles.footer}>
-        <Text style={styles.footerText}>🦞 虾虾开发</Text>
-        <Text style={styles.footerSubtext}>Baby Cry Recognition App</Text>
+        <Text style={styles.footerMain}>🦞 虾虾开发</Text>
+        <Text style={styles.footerSub}>Baby Cry Recognition App v{APP_VERSION}</Text>
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
   section: {
     backgroundColor: '#fff',
-    marginTop: 20,
-    paddingVertical: 10,
+    marginTop: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
     elevation: 2,
   },
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#999',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#aaa',
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 6,
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f5f5f5',
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#f8f8f8',
   },
-  settingLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  iconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 14,
   },
-  settingText: {
-    flex: 1,
-  },
-  settingTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 2,
-  },
-  settingDescription: {
-    fontSize: 13,
-    color: '#999',
-  },
-  footer: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  footerText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 5,
-  },
-  footerSubtext: {
-    fontSize: 14,
-    color: '#999',
-  },
+  settingText: { flex: 1 },
+  settingTitle: { fontSize: 15, fontWeight: '500', color: '#333' },
+  settingDesc: { fontSize: 12, color: '#bbb', marginTop: 2 },
+  footer: { alignItems: 'center', paddingVertical: 40 },
+  footerMain: { fontSize: 15, fontWeight: '600', color: '#555' },
+  footerSub: { fontSize: 13, color: '#bbb', marginTop: 4 },
 });

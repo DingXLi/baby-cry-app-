@@ -11,46 +11,44 @@ module.exports = (sequelize) => {
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+      primaryKey: true,
     },
     email: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
-      validate: {
-        isEmail: true
-      }
+      validate: { isEmail: true },
     },
     password: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
     },
     name: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
     },
     settings: {
-      type: DataTypes.JSONB,
-      defaultValue: {
+      type: DataTypes.TEXT,
+      defaultValue: JSON.stringify({
         notifications: true,
         backgroundMonitoring: false,
-        monitoringSchedule: {
-          enabled: false,
-          startTime: '22:00',
-          endTime: '06:00'
-        }
-      }
-    }
+        monitoringSchedule: { enabled: false, startTime: '22:00', endTime: '06:00' },
+      }),
+      get() {
+        const val = this.getDataValue('settings');
+        return typeof val === 'string' ? JSON.parse(val) : val;
+      },
+      set(val) {
+        this.setDataValue('settings', typeof val === 'string' ? val : JSON.stringify(val));
+      },
+    },
   }, {
     timestamps: true,
-    tableName: 'users'
+    tableName: 'users',
   });
 
-  // Hash password before save
   User.beforeCreate(async (user) => {
-    if (user.password) {
-      user.password = await bcrypt.hash(user.password, 10);
-    }
+    user.password = await bcrypt.hash(user.password, 10);
   });
 
   User.beforeUpdate(async (user) => {
@@ -59,13 +57,11 @@ module.exports = (sequelize) => {
     }
   });
 
-  // Instance method to compare password
-  User.prototype.comparePassword = async function(candidatePassword) {
-    return await bcrypt.compare(candidatePassword, this.password);
+  User.prototype.comparePassword = async function (candidatePassword) {
+    return bcrypt.compare(candidatePassword, this.password);
   };
 
-  // Don't return password in JSON
-  User.prototype.toJSON = function() {
+  User.prototype.toJSON = function () {
     const values = { ...this.get() };
     delete values.password;
     return values;

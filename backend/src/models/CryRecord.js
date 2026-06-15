@@ -10,64 +10,53 @@ module.exports = (sequelize) => {
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+      primaryKey: true,
     },
     userId: {
       type: DataTypes.UUID,
       allowNull: false,
-      references: {
-        model: 'users',
-        key: 'id'
-      }
     },
     cryType: {
-      type: DataTypes.ENUM('hungry', 'sleepy', 'uncomfortable', 'normal'),
-      allowNull: false
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      validate: {
+        isIn: [['hungry', 'sleepy', 'uncomfortable', 'normal']],
+      },
     },
     confidence: {
       type: DataTypes.FLOAT,
       allowNull: false,
-      validate: {
-        min: 0,
-        max: 1
-      }
+      validate: { min: 0, max: 1 },
     },
     audioUrl: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
+      defaultValue: 'local://recording',
     },
     duration: {
       type: DataTypes.FLOAT,
-      comment: 'Duration in seconds'
+      allowNull: true,
     },
     notes: {
       type: DataTypes.TEXT,
-      allowNull: true
+      allowNull: true,
     },
     timestamp: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
-      comment: 'When the cry was detected'
     },
     isManual: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
-      comment: 'Whether this was manually labeled'
-    }
+    },
   }, {
     timestamps: true,
     tableName: 'cry_records',
     indexes: [
-      {
-        fields: ['userId']
-      },
-      {
-        fields: ['timestamp']
-      },
-      {
-        fields: ['cryType']
-      }
-    ]
+      { fields: ['userId'] },
+      { fields: ['timestamp'] },
+      { fields: ['cryType'] },
+    ],
   });
 
   return CryRecord;
