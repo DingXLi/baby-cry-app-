@@ -22,8 +22,6 @@
     "expo-av": "~13.10.0",
     "expo-notifications": "~0.27.0",
     "expo-file-system": "~16.0.0",
-    "@tensorflow/tfjs": "^4.17.0",
-    "@tensorflow/tfjs-react-native": "^4.17.0",
     "@react-native-async-storage/async-storage": "1.21.0",
     "axios": "^1.6.0"
   },

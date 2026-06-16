@@ -100,7 +100,7 @@ jobs:
 
       - name: Generate synthetic audio
         working-directory: ml
-        run: python scripts/generate_synthetic_audio.py --samples_per_class 20
+        run: python scripts/generate_synthetic_audio.py --output_dir data/raw --samples_per_class 20
 
       - name: Extract features
         working-directory: ml

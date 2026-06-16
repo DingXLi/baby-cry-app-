@@ -79,7 +79,7 @@ export default function HomeScreen() {
       if (!listeningRef.current) return;
       await runDetection('simulated://recording.wav');
       scheduleNextDetection();
-    }, 5000);
+    }, DETECTION_INTERVAL_MS);
   };
 
   const startPulse = () => {
@@ -94,14 +94,6 @@ export default function HomeScreen() {
   const stopPulse = () => {
     pulseAnim.stopAnimation();
     Animated.timing(pulseAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start();
-  };
-
-  const scheduleNextDetection = () => {
-    timerRef.current = setTimeout(async () => {
-      if (!listeningRef.current) return;
-      await runDetection();
-      scheduleNextDetection();
-    }, DETECTION_INTERVAL_MS);
   };
 
   const runDetection = async (uri) => {
