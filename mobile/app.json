@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Baby Cry Recognition",
+    "name": "宝宝哭声识别",
     "slug": "baby-cry-app",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -16,25 +16,46 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.dingxli.babycryapp"
+      "bundleIdentifier": "com.dingxli.babycryapp",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "需要麦克风权限来检测和分析宝宝的哭声。",
+        "NSUserNotificationsUsageDescription": "检测到宝宝哭声时发送提醒通知。"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#FF6B6B"
       },
-      "package": "com.dingxli.babycryapp"
+      "package": "com.dingxli.babycryapp",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.POST_NOTIFICATIONS"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-av",
-      "expo-notifications"
-    ],
-    "permissions": [
-      "RECORD_AUDIO",
-      "FOREGROUND_SERVICE"
+      [
+        "expo-av",
+        {
+          "microphonePermission": "需要麦克风权限来检测和分析宝宝的哭声。"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#FF6B6B",
+          "sounds": []
+        }
+      ]
     ]
   }
 }

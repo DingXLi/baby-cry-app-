@@ -17,7 +17,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import StorageService from '../services/StorageService';
 
-const APP_VERSION = '0.2.0';
+const APP_VERSION = '1.0.0';
 
 export default function SettingsScreen() {
   const [settings, setSettings] = useState({
@@ -132,22 +132,6 @@ export default function SettingsScreen() {
           title="后台监听"
           description="应用后台运行时继续监听"
           settingKey="backgroundMonitoring"
-        />
-        <SettingAction
-          icon="time"
-          iconBg="#E8F5E9"
-          iconColor="#4CAF50"
-          title="监听时间段"
-          description="设置自动监听的时间范围"
-          onPress={() => Alert.alert('提示', '该功能即将上线')}
-        />
-        <SettingAction
-          icon="options"
-          iconBg="#FFF3E0"
-          iconColor="#FF9800"
-          title="灵敏度"
-          description="调整哭声检测灵敏度"
-          onPress={() => Alert.alert('提示', '该功能即将上线')}
         />
       </View>
 
